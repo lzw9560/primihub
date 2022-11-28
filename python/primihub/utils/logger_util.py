@@ -6,4 +6,5 @@ from loguru import logger
 # logger.add(LOG_FILE, rotation="200KB", backtrace=True, diagnose=True)
 
 import sys
-logger.add(sys.stdout, colorize=True)
+# logger.add(sys.stdout, colorize=True, format="{time} {level} {message}")
+logger.add(sys.stdout, colorize=True, format="line:{line} {function} |{level} | {message}")

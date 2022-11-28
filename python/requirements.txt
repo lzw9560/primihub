@@ -9,9 +9,13 @@ mmh3
 
 grpcio==1.47.0
 grpcio-tools==1.47.0
-protobuf==3.20.0
+protobuf==3.20.1
+pydantic==1.9.2; python_full_version >= "3.6.1"
+typing-extensions==4.2.0
+six==1.16.0
 
-pydantic
+protobuf_to_pydantic
+
 sphinx
 scikit-learn==1.1.1
 phe==1.5.0

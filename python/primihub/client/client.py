@@ -21,8 +21,11 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from primihub.client.ph_grpc.task import Task
+from primihub.client.ph_grpc.models.common import TaskModel
+from primihub.client.ph_grpc.src.primihub.protos import common_pb2
 from primihub.client.ph_grpc.grpc_client import GrpcClient
 from primihub.client.ph_grpc.service import NodeServiceClient
+from primihub.client.ph_grpc.worker import WorkerClient
 from primihub.client.visitor import Visitor
 from primihub.utils.async_util import fire_coroutine_threadsafe
 from primihub.dataset.dataset_cli import DatasetClientFactory
@@ -51,6 +54,8 @@ class PrimihubClient(object):
     __instance = None
     __first_init = False
 
+    client_id = None
+
     def __new__(cls):
         if not cls.__instance:
             cls.__instance = object.__new__(cls)
@@ -64,8 +69,7 @@ class PrimihubClient(object):
             PrimihubClient.__first_init = True
 
         self.visitor = Visitor()
-        self.client_id = "client:" + \
-                         uuid.uuid3(uuid.NAMESPACE_DNS, 'python.org').hex
+        self.client_id = self.get_client_id()
         self.client_ip = get_host_ip()  # TODO
         self.client_port = 10050  # TODO default
 
@@ -105,6 +109,7 @@ class PrimihubClient(object):
         notify_node = config.get("node", None).split(":")[0] + ":6666"
         self.cert = cert = config.get("cert", None)
 
+        self.get_client_id()
         # grpc clients: Command/Notify/Dataset
         self.grpc_client = GrpcClient(node, cert)
         self.notify_grpc_client = NodeServiceClient(notify_node, cert)
@@ -154,11 +159,18 @@ class PrimihubClient(object):
         self.stop()
         # sys.exit()
 
-    async def submit_task(self, job_id, client_id, *args):
+    def get_client_id(self):
+        if not self.client_id:
+            self.client_id = "client:" + \
+                             uuid.uuid3(uuid.NAMESPACE_DNS, 'python.org').hex
+
+            self.client_id.encode("utf-8")
+            return self.client_id
+
+    async def submit_task(self, task_model: TaskModel, args, **kwargs):
         """Send local functions and parameters to the remote side
 
-        :param job_id
-        :param client_id
+        :param task_model
         :param args: `list` [`tuple`] (`function`, `args`)
         """
         task = Task(task_id="task:" + uuid.uuid5(uuid.NAMESPACE_DNS,
@@ -175,12 +187,20 @@ class PrimihubClient(object):
             await asyncio.sleep(n)  # 50ms
 
         func_params_map = ph.context.Context.func_params_map
+        logger.debug('.' * 30)
         logger.debug(func_params_map)
+        logger.debug('.' * 30)
+        logger.debug(args)
+        logger.debug('.' * 30)
         for arg in args:
             func = arg[0]
             params = arg[1:]
             func_params_map[func.__name__] = params
 
+        logger.debug(func_params_map)
+        logger.debug('.' * 30)
+        import time
+        time.sleep(10)
         self.code = self.visitor.trans_remote_execute(self.code)
         logger.debug("╔═" + "=" * 60 + "═╗")
         logger.debug(self.code)
@@ -193,8 +213,7 @@ class PrimihubClient(object):
         logger.info("-*-" * 25)
         try:
             logger.debug("grpc submit task.")
-            # self.grpc_client.submit_task(code=self.code, job_id=job_id, task_id=task_id, submit_client_id=client_id)
-            thread = threading.Thread(target=self.grpc_client.submit_task, args=(self.code, job_id, task_id, client_id))
+            thread = threading.Thread(target=self.grpc_client.submit_task, args=(task_model, self.client_id))
             thread.start()
         except asyncio.CancelledError:
             logger.error("cancel the future.")
@@ -206,19 +225,68 @@ class PrimihubClient(object):
         else:
             logger.info("grpc submit end.")
 
-    def async_remote_execute(self, *args) -> None:
+    # def set_task_model(self,
+    #                    task_type: common_pb2.TaskType,
+    #                    name: str,
+    #                    language: common_pb2.Language = 0,
+    #                    params: common_pb2.Params = {},
+    #                    code: bytes = None,
+    #                    node_map: common_pb2.Task.NodeMapEntry = {},
+    #                    input_datasets: str = '',
+    #                    job_id: bytes = None,
+    #                    task_id: bytes = None,
+    #                    ):
+    #     if language == 0:
+    #         code = self.code
+    #     task_model = WorkerClient.set_task_model(task_type=task_type,
+    #                                              name=name,
+    #                                              language=language,
+    #                                              params=params,
+    #                                              code=code,
+    #                                              node_map=node_map,
+    #                                              input_datasets=input_datasets,
+    #                                              job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
+    #                                              task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
+    #
+    #     return task_model
+
+    def async_remote_execute(self, task_type: common_pb2.TaskType,
+                             name: str,
+                             language: common_pb2.Language = 0,
+                             params: common_pb2.Params = {},
+                             code: bytes = None,
+                             node_map: common_pb2.Task.NodeMapEntry = {},
+                             input_datasets: str = '',
+                             job_id: bytes = None,
+                             task_id: bytes = None,
+                             args=()) -> None:
+
+        task_model = WorkerClient.set_task_model(task_type=task_type,
+                                                 name=name,
+                                                 language=language,
+                                                 params=params,
+                                                 code=self.code,
+                                                 node_map=node_map,
+                                                 input_datasets=input_datasets,
+                                                 job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
+                                                 task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
         job_id = "job:" + uuid.uuid1().hex
-        # task_id = uuid.uuid1().hex
-        client_id = self.client_id
+        # work_id = uuid.uuid1().hex
+        # client_id = self.client_id()
+        # if isinstance(client_id, str):
+        #     client_id.encode('utf-8')
         logger.debug("------- create task: async submit task -----------")
         logger.debug("job_id: {}, type: {}".format(job_id, type(job_id)))
         logger.debug("client_id: {}, type: {}".format(
-            client_id, type(client_id)))
+            self.client_id, type(self.client_id)))
 
         logger.debug("------- async run submit task -----------")
+
+        # if not task:
+        #     raise "Illegal task name, Choose from `works_map`"
         try:
-            fire_coroutine_threadsafe(self.submit_task(
-                job_id, client_id, *args), self.loop)
+            fire_coroutine_threadsafe(self.submit_task(task_model=task_model, client_id=self.client_id, args=args),
+                                      self.loop)
         except Exception as e:
             logger.debug(str(e))
 

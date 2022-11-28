@@ -63,8 +63,9 @@ async def handler_task_status(event: Event):
         }
     ]
     from primihub.client import primihub_cli as cli
-    client_id = cli.client_id
+    # client_id = cli.client_id
     # client_ip = cli.client_ip
+
     node_ip = cli.node.split(":")[0]
     logger.debug("Total number of node is : {}".format(len(nodes)))
     task = Task(task_id=task_id, primihub_client=cli)

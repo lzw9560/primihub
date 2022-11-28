@@ -18,6 +18,8 @@ import grpc
 
 from .connect import GRPCConnect
 from src.primihub.protos import common_pb2, worker_pb2, worker_pb2_grpc  # noqa
+from .models.common import TaskModel
+from .models.worker import PushTaskRequestModel
 
 
 class WorkerClient(GRPCConnect):
@@ -34,18 +36,17 @@ class WorkerClient(GRPCConnect):
         self.request_data = None
         self.stub = worker_pb2_grpc.VMNodeStub(self.channel)
 
-    def set_task_map(self,
-                     task_type: common_pb2.TaskType = 0,
-                     name: str = "",
-                     language: common_pb2.Language = 0,
-                     params: common_pb2.Params = None,
-                     code: bytes = None,
-                     node_map: common_pb2.Task.NodeMapEntry = None,
-                     input_datasets: str = None,
-                     job_id: bytes = None,
-                     task_id: bytes = None,
-                     channel_map: str = None,  # TODO
-                     ):
+    @staticmethod
+    def set_task_model(task_type: common_pb2.TaskType = 0,
+                       name: str = "",
+                       language: common_pb2.Language = 0,
+                       params: common_pb2.Params = None,
+                       code: bytes = None,
+                       node_map: common_pb2.Task.NodeMapEntry = None,
+                       input_datasets: str = None,
+                       job_id: bytes = None,
+                       task_id: bytes = None,
+                       ):
         """set task map
 
         :param task_type: {}
@@ -61,54 +62,74 @@ class WorkerClient(GRPCConnect):
         :return: `dict`
         """
 
-        task_map = {
-            "type": task_type,
-            "name": name,
-            "language": language,
-            "code": code
-        }
-        if name:
-            task_map["name"] = name
+        # task_map = {
+        #     "type": task_type,
+        #     "name": name,
+        #     "language": language,
+        #     "code": code
+        # }
+        # if name:
+        #     task_map["name"] = name
+        #
+        # if params:
+        #     task_map["params"] = params
+        #
+        # if node_map:
+        #     task_map["node_map"] = node_map
+        #
+        # if input_datasets:
+        #     task_map["input_datasets"] = input_datasets
+        #
+        # print(type(job_id), job_id)
+        # if job_id:
+        #     task_map["job_id"] = job_id
+        # else:
+        #     job_id = uuid.uuid1().hex
+        #     task_map["job_id"] = bytes(str(job_id), "utf-8")
+        #
+        # if task_id:
+        #     task_map["task_id"] = task_id
+        # else:
+        #     task_id = uuid.uuid1().hex
+        #     task_map["task_id"] = bytes(str(task_id), "utf-8")
 
-        if params:
-            task_map["params"] = params
+        task = TaskModel(type=task_type,
+                         name=name,
+                         language=language,
+                         params=params,
+                         code=code,
+                         node_map=node_map,
+                         input_datasets=input_datasets,
+                         job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
+                         task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
 
-        if node_map:
-            task_map["node_map"] = node_map
-
-        if input_datasets:
-            task_map["input_datasets"] = input_datasets
-
-        print(type(job_id), job_id)
-        if job_id:
-            task_map["job_id"] = job_id
-        else:
-            job_id = uuid.uuid1().hex
-            task_map["job_id"] = bytes(str(job_id), "utf-8")
-
-        if task_id:
-            task_map["task_id"] = task_id
-        else:
-            task_id = uuid.uuid1().hex
-            task_map["task_id"] = bytes(str(task_id), "utf-8")
-
-        return task_map
+        print(22222222, type(task))
+        return task
 
     @staticmethod
     def push_task_request(intended_worker_id=b'1',
-                          task=None,
+                          task=TaskModel,
                           sequence_number=11,
                           client_processed_up_to=22,
                           submit_client_id=b""
                           ):
-        request_data = {
-            "intended_worker_id": intended_worker_id,
-            "task": task,
-            "sequence_number": sequence_number,
-            "client_processed_up_to": client_processed_up_to,
-            "submit_client_id": submit_client_id
-        }
-        request = worker_pb2.PushTaskRequest(**request_data)
+        # request_data = {
+        #     "intended_worker_id": intended_worker_id,
+        #     "task": task,
+        #     "sequence_number": sequence_number,
+        #     "client_processed_up_to": client_processed_up_to,
+        #     "submit_client_id": submit_client_id
+        # }
+
+        request_data = PushTaskRequestModel(
+            intended_worker_id=intended_worker_id,
+            task=task.dict(),
+            sequence_number=sequence_number,
+            client_processed_up_to=client_processed_up_to,
+            submit_client_id=submit_client_id
+        )
+        # request = worker_pb2.PushTaskRequest(**request_data)
+        request = worker_pb2.PushTaskRequest(**request_data.dict())
         print(request)
         return request
 
