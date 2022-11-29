@@ -107,6 +107,14 @@ def run_guest_party():
     logger.info("Finish homo-LR guest logic.")
 
 
-cli.async_remote_execute((run_host_party, ), (run_guest_party, ))
+cli.async_remote_execute(
+    task_type=0,
+    name="homo lr task",
+    language=0,
+    params={},
+    node_map={},
+    input_datasets=[],
+    args=((run_arbiter_party,), (run_host_party,), (run_guest_party,))
+)
 
 # cli.start()
