@@ -348,6 +348,18 @@ def xgb_guest_logic(cry_pri="paillier"):
 # context
 cry_pri = "plaintext"
 # cry_pri = "paillier"
-cli.async_remote_execute((xgb_host_logic, cry_pri), (xgb_guest_logic, cry_pri))
+# cli.async_remote_execute((xgb_host_logic, cry_pri), (xgb_guest_logic, cry_pri))
+
+
+cli.async_remote_execute(
+    task_type=0,
+    name="dis xgb task",
+    language=0,
+    params={},
+    node_map={},
+    input_datasets=[],
+    args=((xgb_host_logic, cry_pri), (xgb_guest_logic, cry_pri))
+)
+
 
 # cli.start()
