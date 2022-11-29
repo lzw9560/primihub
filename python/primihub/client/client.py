@@ -253,7 +253,8 @@ class PrimihubClient(object):
     def async_remote_execute(self, task_type: common_pb2.TaskType,
                              name: str,
                              language: common_pb2.Language = 0,
-                             params: common_pb2.Params = {},
+                             # params: common_pb2.Params = {},
+                             params: dict = None,
                              code: bytes = None,
                              node_map: common_pb2.Task.NodeMapEntry = {},
                              input_datasets: str = '',
@@ -261,11 +262,16 @@ class PrimihubClient(object):
                              task_id: bytes = None,
                              args=()) -> None:
 
+        if language == 0:
+            code = self.code
+        elif language == 3:
+            code = b''
+        logger.debug(f"params: {params}")
         task_model = WorkerClient.set_task_model(task_type=task_type,
                                                  name=name,
                                                  language=language,
                                                  params=params,
-                                                 code=self.code,
+                                                 code=code,
                                                  node_map=node_map,
                                                  input_datasets=input_datasets,
                                                  job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),

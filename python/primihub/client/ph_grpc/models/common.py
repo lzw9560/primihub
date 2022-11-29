@@ -24,12 +24,30 @@ here = path.abspath(path.join(path.dirname(__file__), ".."))
 sys.path.append(here)
 from src.primihub.protos import common_pb2  # noqa
 
+ParamValueModel: Type[BaseModel] = msg_to_pydantic_model(common_pb2.ParamValue)
+ParamsModel: Type[BaseModel] = msg_to_pydantic_model(common_pb2.Params)
 TaskModel: Type[BaseModel] = msg_to_pydantic_model(common_pb2.Task)
 
-# print(
-#     # TaskModel.__name__,
-#     {
-#         k: v
-#         for k, v in TaskModel.__fields__.items()
-#     }
-# )
+print(
+    TaskModel.__name__,
+    {
+        k: v
+        for k, v in TaskModel.__fields__.items()
+    }
+)
+
+print(
+    ParamValueModel.__name__,
+    {
+        k: v
+        for k, v in ParamValueModel.__fields__.items()
+    }
+)
+
+print(
+    ParamsModel.__name__,
+    {
+        k: v
+        for k, v in ParamsModel.__fields__.items()
+    }
+)

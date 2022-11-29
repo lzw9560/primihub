@@ -18,8 +18,11 @@ import grpc
 
 from .connect import GRPCConnect
 from src.primihub.protos import common_pb2, worker_pb2, worker_pb2_grpc  # noqa
-from .models.common import TaskModel
+from .models.common import TaskModel, ParamsModel, ParamValueModel
 from .models.worker import PushTaskRequestModel
+
+from primihub.utils.logger_util import logger
+from .src.primihub.protos.common_pb2 import ParamValue, Params
 
 
 class WorkerClient(GRPCConnect):
@@ -62,47 +65,49 @@ class WorkerClient(GRPCConnect):
         :return: `dict`
         """
 
-        # task_map = {
-        #     "type": task_type,
-        #     "name": name,
-        #     "language": language,
-        #     "code": code
-        # }
-        # if name:
-        #     task_map["name"] = name
-        #
-        # if params:
-        #     task_map["params"] = params
-        #
-        # if node_map:
-        #     task_map["node_map"] = node_map
-        #
-        # if input_datasets:
-        #     task_map["input_datasets"] = input_datasets
-        #
-        # print(type(job_id), job_id)
-        # if job_id:
-        #     task_map["job_id"] = job_id
-        # else:
-        #     job_id = uuid.uuid1().hex
-        #     task_map["job_id"] = bytes(str(job_id), "utf-8")
-        #
-        # if task_id:
-        #     task_map["task_id"] = task_id
-        # else:
-        #     task_id = uuid.uuid1().hex
-        #     task_map["task_id"] = bytes(str(task_id), "utf-8")
+        logger.debug(f"params: {params}")
 
-        task = TaskModel(type=task_type,
-                         name=name,
-                         language=language,
-                         params=params,
-                         code=code,
-                         node_map=node_map,
-                         input_datasets=input_datasets,
-                         job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
-                         task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
+        params_map = {}
+        for k, v in params.items():
+            if k == "pirType":
+                p = common_pb2.ParamValue()
+                p.var_type = 0
+                p.is_array = False
+                p.value_int32 = v
+                params_map[k] = p
 
+            elif k == "clientData":
+                p = common_pb2.ParamValue()
+                p.var_type = 2
+                p.is_array = True
+                p.value_string = v
+                params_map[k] = p
+            elif k == "serverData":
+                p = common_pb2.ParamValue()
+                p.var_type = 2
+                p.is_array = False
+                p.value_string = v
+                params_map[k] = p
+            elif k == "outputFullFilename":
+                p = common_pb2.ParamValue()
+                p.var_type = 2
+                p.is_array = False
+                p.value_string = v
+                params_map[k] = p
+
+        params_obj = common_pb2.Params(param_map=params_map)
+
+        task = common_pb2.Task(type=task_type,
+                               name=name,
+                               language=language,
+                               params=params_obj,
+                               code=code,
+                               node_map=node_map,
+                               input_datasets=input_datasets,
+                               job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
+                               task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
+
+        logger.debug(f"task: {task}")
         return task
 
     @staticmethod
@@ -120,15 +125,15 @@ class WorkerClient(GRPCConnect):
         #     "submit_client_id": submit_client_id
         # }
 
-        request_data = PushTaskRequestModel(
+        request = worker_pb2.PushTaskRequest(
             intended_worker_id=intended_worker_id,
-            task=task.dict(),
+            task=task,
             sequence_number=sequence_number,
             client_processed_up_to=client_processed_up_to,
             submit_client_id=submit_client_id
         )
         # request = worker_pb2.PushTaskRequest(**request_data)
-        request = worker_pb2.PushTaskRequest(**request_data.dict())
+        # request = worker_pb2.PushTaskRequest(request_data)
         return request
 
     def submit_task(self, request: worker_pb2.PushTaskRequest) -> worker_pb2.PushTaskReply:
