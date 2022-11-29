@@ -38,30 +38,34 @@ def get_logger(name):
 
 # arbiter_info, guest_info, host_info, task_type, task_params = load_info()
 task_params = {}
-logger = get_logger("pir")
+logger = get_logger("psi")
 
 """
 ./bazel-bin/cli 
 --server="你的IP:50050" 
---task_type=2 
---params="clientData:STRING:1:HXfUhjJCfMssfPIjhDBXeMyZFmfbIAYvijkSCsyqvoGsJwcFhZiYIYSpFDdTUxvG;VjBWFAmqrPKraFuJwuiFaXJXvLskePqSqVKVwumyfulYWJPNkwfgHVyISSxsBKBi,serverData:STRING:0:keyword_pir_server_data,pirType:INT32:0:1,outputFullFilename:STRING:0:/data/result/kw_pir_result.csv" --input_datasets="serverData"
-
+--task_type=3 
+--params="clientData:STRING:0:psi_client_data,serverData:STRING:0:psi_server_data,
+clientIndex:INT32:0:0,serverIndex:INT32:0:1,
+psiType:INT32:0:0,psiTag:INT32:0:0,outputFullFilename:STRING:0:/data/result/psi_result.csv" 
+--input_datasets="clientData,serverData"
 """
 
 params = {
-    # "clientData": "HXfUhjJCfMssfPIjhDBXeMyZFmfbIAYvijkSCsyqvoGsJwcFhZiYIYSpFDdTUxvG;VjBWFAmqrPKraFuJwuiFaXJXvLskePqSqVKVwumyfulYWJPNkwfgHVyISSxsBKBi",
-    "clientData": "lLAnqwEihmGXxVPZZESncfgaaIZIhoPpMEmHPSFUoqUgUHBnMUddmTVwHfxEsqGg",
-    "serverData": "keyword_pir_server_data",
-    "pirType": 1,
-    "outputFullFilename": "/data/result/cli/kw_pir_result.csv",
+    "clientData": "psi_client_data",
+    "serverData": "psi_server_data",
+    "clientIndex": 0,
+    "serverIndex": 1,
+    "psiType": 0,
+    "psiTag": 0,
+    "outputFullFilename": "/data/result/cli/psi_result.csv",
 
 }
 
 cli.async_remote_execute(
-    task_type=2,
-    name="keyword pir task",
+    task_type=3,
+    name="psi task",
     language=3,
     params=params,
     node_map={},
-    input_datasets=["serverData"],
+    input_datasets=["clientData", "serverData"],
 )

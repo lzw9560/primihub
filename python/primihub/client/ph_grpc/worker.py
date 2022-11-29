@@ -24,6 +24,45 @@ from .models.worker import PushTaskRequestModel
 from primihub.utils.logger_util import logger
 from .src.primihub.protos.common_pb2 import ParamValue, Params
 
+params_conver = {
+    # pir
+    "pirType": {
+        "var_type": 0,
+        "is_array": False,
+    },
+    "clientData": {
+        "var_type": 2,
+        "is_array": True,
+    },
+    "serverData": {
+        "var_type": 2,
+        "is_array": False,
+    },
+    "outputFullFilename": {
+        "var_type": 2,
+        "is_array": False,
+    },
+
+    # psi
+    "clientIndex": {
+        "var_type": 0,
+        "is_array": False,
+    },
+    "serverIndex": {
+        "var_type": 0,
+        "is_array": False,
+    },
+    "psiType": {
+        "var_type": 0,
+        "is_array": False,
+    },
+    "psiTag": {
+        "var_type": 0,
+        "is_array": False,
+    }
+
+}
+
 
 class WorkerClient(GRPCConnect):
     """primihub gRPC worker client
@@ -69,31 +108,44 @@ class WorkerClient(GRPCConnect):
 
         params_map = {}
         for k, v in params.items():
-            if k == "pirType":
-                p = common_pb2.ParamValue()
-                p.var_type = 0
-                p.is_array = False
+            logger.debug(f"k: {k}, v: {v}")
+            p = common_pb2.ParamValue()
+            p.var_type = params_conver[k]["var_type"]
+            logger.debug(f"var_type: {p.var_type}")
+            p.is_array = params_conver[k]["is_array"]
+            logger.debug(f"is_array: {p.is_array}")
+            if p.var_type == 0 or p.var_type == 1:
                 p.value_int32 = v
-                params_map[k] = p
+            elif p.var_type == 2:
+                p.value_string = v
 
-            elif k == "clientData":
-                p = common_pb2.ParamValue()
-                p.var_type = 2
-                p.is_array = True
-                p.value_string = v
-                params_map[k] = p
-            elif k == "serverData":
-                p = common_pb2.ParamValue()
-                p.var_type = 2
-                p.is_array = False
-                p.value_string = v
-                params_map[k] = p
-            elif k == "outputFullFilename":
-                p = common_pb2.ParamValue()
-                p.var_type = 2
-                p.is_array = False
-                p.value_string = v
-                params_map[k] = p
+            params_map[k] = p
+
+            # if k == "pirType":
+            #     p = common_pb2.ParamValue()
+            #     p.var_type = 0
+            #     p.is_array = False
+            #     p.value_int32 = v
+            #     params_map[k] = p
+            #
+            # elif k == "clientData":
+            #     p = common_pb2.ParamValue()
+            #     p.var_type = 2
+            #     p.is_array = True
+            #     p.value_string = v
+            #     params_map[k] = p
+            # elif k == "serverData":
+            #     p = common_pb2.ParamValue()
+            #     p.var_type = 2
+            #     p.is_array = False
+            #     p.value_string = v
+            #     params_map[k] = p
+            # elif k == "outputFullFilename":
+            #     p = common_pb2.ParamValue()
+            #     p.var_type = 2
+            #     p.is_array = False
+            #     p.value_string = v
+            #     params_map[k] = p
 
         params_obj = common_pb2.Params(param_map=params_map)
 
