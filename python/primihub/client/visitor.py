@@ -129,6 +129,10 @@ class CLiTransformer(ast.NodeTransformer):
             # print(node.value.func.__dict__)
             if node.value.func.__dict__.get("attr", None) == "init":
                 return None
+            if node.value.func.__dict__.get("attr", None) == "start":
+                return None
+            if node.value.func.__dict__.get("attr", None) == "async_remote_execute":
+                return None
         return node
 
 
@@ -161,6 +165,7 @@ class RemoteExecuteTransformer(ast.NodeTransformer):
             # print(node.value.func)
             # print(node.value.func.__dict__)
             if node.value.func.__dict__.get("attr", None) == "async_remote_execute":
+                print("remove async_remote_execute.")
                 return None
             if node.value.func.__dict__.get("attr", None) == "remote_execute":
                 return None

@@ -103,7 +103,6 @@ class WorkerClient(GRPCConnect):
                          job_id=job_id or bytes(str(uuid.uuid1().hex), "utf-8"),
                          task_id=task_id or bytes(str(uuid.uuid1().hex), "utf-8"))
 
-        print(22222222, type(task))
         return task
 
     @staticmethod
@@ -130,7 +129,6 @@ class WorkerClient(GRPCConnect):
         )
         # request = worker_pb2.PushTaskRequest(**request_data)
         request = worker_pb2.PushTaskRequest(**request_data.dict())
-        print(request)
         return request
 
     def submit_task(self, request: worker_pb2.PushTaskRequest) -> worker_pb2.PushTaskReply:
